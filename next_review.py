@@ -169,6 +169,11 @@ def ignore_previously_reviewed(reviews, username=None, email=None):
     return filtered_reviews
 
 
+def bypass_num_reviews(reviews, num):
+    """bypass the first num reviews in the list."""
+    return reviews[num:]
+
+
 def ignore_previously_commented(reviews, username=None, email=None):
     """Ignore reviews where I'm the last commenter."""
     filtered_reviews = []
@@ -210,6 +215,11 @@ def get_config():
     options.append(parser.add_argument(
         '-p', '--port', type=int, default=DEFAULT_GERRIT_PORT,
         help='SSH port for gerrit'))
+    options.append(parser.add_argument(
+        '-b', '--bypass', type=int, nargs='?',
+        default=0, const=1, dest='bypass', action='store',
+        help='bypass the first n reviews in the list that you '
+             'don\'t want to or can\'t give an opinion on'))
     options.append(parser.add_argument(
         '-u', '--username', type=str, default=getpass.getuser(),
         help='Your SSH username for gerrit'))
@@ -292,6 +302,10 @@ def main(args):
 
     # review old stuff before it expires
     reviews = sort_reviews_by_last_updated(reviews)
+
+    # after sorting, bypass num reviews if required
+    if args.bypass:
+        reviews = bypass_num_reviews(reviews, args.bypass)
 
     if args.list:
         render_reviews(reviews)
